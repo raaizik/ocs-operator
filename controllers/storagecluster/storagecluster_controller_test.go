@@ -192,6 +192,111 @@ var mockDeviceSets = []api.StorageDeviceSet{
 	},
 }
 
+func getMockStorageProfiles() *api.StorageProfileList {
+	const pgAutoscaleMode = "pg_autoscale_mode"
+	const pgNum = "pg_num"
+	const pgpNum = "pgp_num"
+	const namespace = ""
+	const kind = "StorageProfile"
+	const apiVersion = "ocs.openshift.io/v1"
+	spfast := &api.StorageProfile{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       kind,
+			APIVersion: apiVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fast-performance",
+			Namespace: namespace,
+		},
+		Spec: api.StorageProfileSpec{
+			DeviceClass: "fast",
+			BlockPoolConfiguration: api.BlockPoolConfigurationSpec{
+				Parameters: map[string]string{
+					pgAutoscaleMode: "on",
+					pgNum:           "128",
+					pgpNum:          "128",
+				},
+			},
+			SharedFilesystemConfiguration: api.SharedFilesystemConfigurationSpec{
+				Parameters: map[string]string{
+					pgAutoscaleMode: "on",
+					pgNum:           "128",
+					pgpNum:          "128",
+				},
+			},
+		},
+	}
+	spmed := &api.StorageProfile{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       kind,
+			APIVersion: apiVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "med-performance",
+			Namespace: namespace,
+		},
+		Spec: api.StorageProfileSpec{
+			DeviceClass: "med",
+			BlockPoolConfiguration: api.BlockPoolConfigurationSpec{
+				Parameters: map[string]string{
+					pgAutoscaleMode: "on",
+					pgNum:           "128",
+					pgpNum:          "128",
+				},
+			},
+			SharedFilesystemConfiguration: api.SharedFilesystemConfigurationSpec{
+				Parameters: map[string]string{
+					pgAutoscaleMode: "on",
+					pgNum:           "128",
+					pgpNum:          "128",
+				},
+			},
+		},
+	}
+	spslow := &api.StorageProfile{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       kind,
+			APIVersion: apiVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "slow-performance",
+			Namespace: namespace,
+		},
+		Spec: api.StorageProfileSpec{
+			DeviceClass: "slow",
+			BlockPoolConfiguration: api.BlockPoolConfigurationSpec{
+				Parameters: map[string]string{
+					pgAutoscaleMode: "on",
+					pgNum:           "128",
+					pgpNum:          "128",
+				},
+			},
+			SharedFilesystemConfiguration: api.SharedFilesystemConfigurationSpec{
+				Parameters: map[string]string{
+					pgAutoscaleMode: "on",
+					pgNum:           "128",
+					pgpNum:          "128",
+				},
+			},
+		},
+	}
+	spblankdeviceclass := &api.StorageProfile{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       kind,
+			APIVersion: apiVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "blank-performance",
+			Namespace: namespace,
+		},
+		Spec: api.StorageProfileSpec{
+			DeviceClass: "",
+		},
+	}
+	storageProfiles := &api.StorageProfileList{Items: []api.StorageProfile{*spmed, *spslow, *spfast, *spblankdeviceclass}}
+	return storageProfiles
+}
+
 var mockNodeList = &corev1.NodeList{
 	TypeMeta: metav1.TypeMeta{
 		Kind: "NodeList",
@@ -1168,7 +1273,7 @@ func TestStorageClusterOnMultus(t *testing.T) {
 				},
 			}
 		}
-		reconciler := createFakeInitializationStorageClusterReconcilerWithPlatform(t, platform)
+		reconciler := createFakeInitializationStorageClusterReconcilerWithPlatform(t, platform, nil)
 		_ = reconciler.Client.Create(context.TODO(), c.cr)
 		result, err := reconciler.Reconcile(context.TODO(), request)
 		if c.testCase != "default" {
