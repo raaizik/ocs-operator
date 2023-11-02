@@ -146,7 +146,7 @@ func createUpdateRuntimeObjects(t *testing.T) []client.Object {
 }
 
 func initStorageClusterResourceCreateUpdateTestWithPlatformProviderMode(
-	t *testing.T, platform *Platform, runtimeObjs []client.Object, customSpec *api.StorageClusterSpec, storageProfiles *api.StorageProfileList, remoteConsumers bool) (*testing.T, StorageClusterReconciler, *api.StorageCluster, reconcile.Request, []reconcile.Request) {
+	t *testing.T, runtimeObjs []client.Object, customSpec *api.StorageClusterSpec, storageProfiles *api.StorageProfileList, remoteConsumers bool) (*testing.T, StorageClusterReconciler, *api.StorageCluster, reconcile.Request, []reconcile.Request) {
 	cr := createDefaultStorageCluster()
 	if customSpec != nil {
 		_ = mergo.Merge(&cr.Spec, customSpec)
@@ -222,7 +222,7 @@ func initStorageClusterResourceCreateUpdateTestWithPlatformProviderMode(
 	}
 	rtObjsToCreateReconciler = append(rtObjsToCreateReconciler, storageProfileRuntimeObjects...)
 
-	reconciler := createFakeInitializationStorageClusterReconcilerWithPlatform(t, platform, rtObjsToCreateReconciler...)
+	reconciler := createFakeInitializationStorageClusterReconciler(t, rtObjsToCreateReconciler...)
 
 	_ = reconciler.Client.Create(context.TODO(), cr)
 	for _, rtObj := range runtimeObjs {

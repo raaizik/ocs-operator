@@ -34,16 +34,16 @@ import (
 )
 
 const (
-	pgAutoscaleMode    = "pg_autoscale_mode"
-	pgNum              = "pg_num"
-	pgpNum             = "pgp_num"
-	namespaceName      = "test-ns"
-	deviceClass        = "ssd"
-	storageProfileKind = "StorageProfile"
+	pgAutoscaleMode = "pg_autoscale_mode"
+	pgNum           = "pg_num"
+	pgpNum          = "pgp_num"
+	namespaceName   = "test-ns"
+	deviceClass     = "ssd"
+	kind            = "StorageProfile"
 )
 
 var fakeStorageProfile = &v1.StorageProfile{
-	TypeMeta: metav1.TypeMeta{Kind: storageProfileKind},
+	TypeMeta: metav1.TypeMeta{Kind: kind},
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "medium",
 		Namespace: namespaceName,
