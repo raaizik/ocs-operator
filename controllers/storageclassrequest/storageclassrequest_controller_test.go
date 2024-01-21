@@ -359,7 +359,6 @@ func TestStorageProfileCephFsSubVolGroup(t *testing.T) {
 	}
 }
 
-
 func TestProfileReconcile(t *testing.T) {
 	var err error
 	var caseCounter int
@@ -733,4 +732,3 @@ func TestCephFsSubVolGroup(t *testing.T) {
 	_, err = r.reconcilePhases()
 	assert.Error(t, err, caseLabel)
 }
-
