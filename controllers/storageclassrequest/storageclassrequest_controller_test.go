@@ -34,16 +34,16 @@ import (
 )
 
 const (
-	pgAutoscaleMode = "pg_autoscale_mode"
-	pgNum           = "pg_num"
-	pgpNum          = "pgp_num"
-	namespaceName   = "test-ns"
-	deviceClass     = "ssd"
-	kind            = "StorageProfile"
+	pgAutoscaleMode    = "pg_autoscale_mode"
+	pgNum              = "pg_num"
+	pgpNum             = "pgp_num"
+	namespaceName      = "test-ns"
+	deviceClass        = "ssd"
+	storageProfileKind = "StorageProfile"
 )
 
 var fakeStorageProfile = &v1.StorageProfile{
-	TypeMeta: metav1.TypeMeta{Kind: kind},
+	TypeMeta: metav1.TypeMeta{Kind: storageProfileKind},
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "medium",
 		Namespace: namespaceName,
@@ -54,7 +54,7 @@ var fakeStorageProfile = &v1.StorageProfile{
 }
 
 var validStorageProfile = &v1.StorageProfile{
-	TypeMeta: metav1.TypeMeta{Kind: kind},
+	TypeMeta: metav1.TypeMeta{Kind: storageProfileKind},
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "valid",
 		Namespace: namespaceName,
@@ -72,8 +72,10 @@ var validStorageProfile = &v1.StorageProfile{
 	Status: v1.StorageProfileStatus{Phase: ""},
 }
 
+// A rejected StorageProfile is one that is invalid due to having a blank device class field and is set to
+// Rejected in its phase.
 var rejectedStorageProfile = &v1.StorageProfile{
-	TypeMeta: metav1.TypeMeta{Kind: kind},
+	TypeMeta: metav1.TypeMeta{Kind: storageProfileKind},
 	ObjectMeta: metav1.ObjectMeta{
 		Name:      "rejected",
 		Namespace: namespaceName,
@@ -336,9 +338,7 @@ func TestStorageProfileCephBlockPool(t *testing.T) {
 		fmt.Println(caseLabel)
 
 		r := createFakeReconciler(t)
-		if strings.Contains(c.label, "rejected") {
-			r.storageCluster.Spec.DefaultStorageProfile = rejectedStorageProfile.Name
-		}
+		r.storageCluster.Spec.DefaultStorageProfile = c.storageProfile.Name
 		r.StorageClassRequest.Spec.Type = "blockpool"
 
 		r.StorageClassRequest.Spec.StorageProfile = c.storageProfile.Name
@@ -362,9 +362,10 @@ func TestStorageProfileCephBlockPool(t *testing.T) {
 			expectedStorageProfileParameters := validStorageProfile.Spec.BlockPoolConfiguration.Parameters
 			actualBlockPoolParameters := r.cephBlockPool.Spec.Parameters
 			assert.Equal(t, expectedStorageProfileParameters, actualBlockPoolParameters, caseLabel)
+			assert.NotEqual(t, v1.StorageProfilePhaseRejected, c.storageProfile.Status.Phase)
 		} else {
 			actualBlockPoolParameters := r.cephBlockPool.Spec.Parameters
-			assert.Equal(t, v1.StorageProfilePhaseRejected, rejectedStorageProfile.Status.Phase)
+			assert.Equal(t, v1.StorageProfilePhaseRejected, c.storageProfile.Status.Phase)
 			assert.Nil(t, actualBlockPoolParameters, caseLabel)
 		}
 	}
