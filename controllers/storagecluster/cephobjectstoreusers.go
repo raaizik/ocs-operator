@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	ocsv1 "github.com/red-hat-storage/ocs-operator/api/v4/v1"
-	"github.com/red-hat-storage/ocs-operator/v4/controllers/platform"
 	cephv1 "github.com/rook/rook/pkg/apis/ceph.rook.io/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -65,18 +64,17 @@ func (obj *ocsCephObjectStoreUsers) ensureCreated(r *StorageClusterReconciler, i
 	if reconcileStrategy == ReconcileStrategyIgnore {
 		return reconcile.Result{}, nil
 	}
-
-	skip, err := platform.PlatformsShouldSkipObjectStore()
+	skip, err := r.PlatformsShouldSkipObjectStore()
 	if err != nil {
 		return reconcile.Result{}, err
 	}
 
 	if skip {
-		platformType, err := platform.GetPlatformType()
+		platform, err := r.platform.GetPlatform(r.Client)
 		if err != nil {
 			return reconcile.Result{}, err
 		}
-		r.Log.Info("Platform is set to skip object store. Not creating a CephObjectStoreUser.", "Platform", platformType)
+		r.Log.Info("Platform is set to skip object store. Not creating a CephObjectStoreUser.", "Platform", platform)
 		return reconcile.Result{}, nil
 	}
 

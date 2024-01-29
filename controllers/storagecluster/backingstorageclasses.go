@@ -7,7 +7,6 @@ import (
 
 	configv1 "github.com/openshift/api/config/v1"
 	ocsv1 "github.com/red-hat-storage/ocs-operator/api/v4/v1"
-	"github.com/red-hat-storage/ocs-operator/v4/controllers/platform"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
 	v1 "k8s.io/api/storage/v1"
@@ -27,8 +26,12 @@ type backingStorageClasses struct{}
 // ensureCreated ensures that backing storageclasses are created for the StorageCluster
 func (obj *backingStorageClasses) ensureCreated(r *StorageClusterReconciler, sc *ocsv1.StorageCluster) (reconcile.Result, error) {
 
+	platform, err := r.platform.getPlatform(r.Client)
+	if err != nil {
+		return reconcile.Result{}, err
+	}
 	existingBackingStorageClasses := &v1.StorageClassList{}
-	err := r.Client.List(
+	err = r.Client.List(
 		r.ctx,
 		existingBackingStorageClasses,
 		client.MatchingLabels(map[string]string{
@@ -47,7 +50,7 @@ func (obj *backingStorageClasses) ensureCreated(r *StorageClusterReconciler, sc 
 
 	for i := range sc.Spec.BackingStorageClasses {
 		bsc := &sc.Spec.BackingStorageClasses[i]
-		err := createOrUpdateBackingStorageclass(r, bsc)
+		err := createOrUpdateBackingStorageclass(r, bsc, platform)
 		if err != nil {
 			r.Log.Error(err, "Failed to create or update StorageClass.", "StorageClass", bsc.Name)
 			continue
@@ -72,16 +75,10 @@ func (obj *backingStorageClasses) ensureCreated(r *StorageClusterReconciler, sc 
 	return reconcile.Result{}, nil
 }
 
-func createOrUpdateBackingStorageclass(r *StorageClusterReconciler, bsc *ocsv1.BackingStorageClass) error {
+func createOrUpdateBackingStorageclass(r *StorageClusterReconciler, bsc *ocsv1.BackingStorageClass, platform configv1.PlatformType) error {
 	if bsc.Name == "" {
 		return fmt.Errorf("backingStorageClass name is empty")
 	}
-
-	platformType, err := platform.GetPlatformType()
-	if err != nil {
-		return err
-	}
-
 	pvReclaimPolicy := corev1.PersistentVolumeReclaimDelete
 	allowVolumeExpansion := true
 	volumeBindingMode := v1.VolumeBindingWaitForFirstConsumer
@@ -101,8 +98,8 @@ func createOrUpdateBackingStorageclass(r *StorageClusterReconciler, bsc *ocsv1.B
 	}
 
 	if bsc.Provisioner == "" {
-		if platformType != configv1.AWSPlatformType {
-			return fmt.Errorf("auto detection of provisioner is not supported for %s", platformType)
+		if platform != configv1.AWSPlatformType {
+			return fmt.Errorf("auto detection of provisioner is not supported for %s", platform)
 		}
 		desiredStorageClass.Provisioner = "ebs.csi.aws.com"
 	}

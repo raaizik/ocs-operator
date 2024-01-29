@@ -24,15 +24,20 @@ func TestCephNFS(t *testing.T) {
 			createRuntimeObjects: false,
 		},
 	}
-	for _, c := range cases {
-		var objects []client.Object
-		t, reconciler, cr, request := initStorageClusterResourceCreateUpdateTest(t, objects, nil)
-		if c.createRuntimeObjects {
-			objects = createUpdateRuntimeObjects(t) //nolint:staticcheck //no need to use objects as they update in runtime
+	for _, eachPlatform := range allPlatforms {
+		cp := &Platform{platform: eachPlatform}
+		for _, c := range cases {
+			var objects []client.Object
+			t, reconciler, cr, request := initStorageClusterResourceCreateUpdateTestWithPlatform(
+				t, cp, objects, nil)
+			if c.createRuntimeObjects {
+				objects = createUpdateRuntimeObjects(t, reconciler) //nolint:staticcheck //no need to use objects as they update in runtime
+			}
+			assertCephNFS(t, reconciler, cr, request)
+			assertCephNFSService(t, reconciler, cr, request)
 		}
-		assertCephNFS(t, reconciler, cr, request)
-		assertCephNFSService(t, reconciler, cr, request)
 	}
+
 }
 
 func assertCephNFS(t *testing.T, reconciler StorageClusterReconciler, cr *api.StorageCluster, request reconcile.Request) {

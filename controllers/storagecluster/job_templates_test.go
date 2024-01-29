@@ -35,7 +35,8 @@ func TestJobTemplates(t *testing.T) {
 		},
 	}
 
-	t, reconciler, cr, request := initStorageClusterResourceCreateUpdateTest(t, nil, nil)
+	t, reconciler, cr, request := initStorageClusterResourceCreateUpdateTestWithPlatform(
+		t, nil, nil, nil)
 
 	for _, c := range cases {
 		template := &openshiftv1.Template{
@@ -67,5 +68,4 @@ func TestJobTemplates(t *testing.T) {
 	err := reconciler.Client.List(context.TODO(), actualTemplateList)
 	assert.NoError(t, err)
 	assert.Equal(t, len(cases), len(actualTemplateList.Items))
-
 }

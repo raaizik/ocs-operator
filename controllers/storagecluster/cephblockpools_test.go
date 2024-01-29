@@ -32,15 +32,18 @@ func TestCephBlockPools(t *testing.T) {
 			createRuntimeObjects: false,
 		},
 	}
-
-	for _, c := range cases {
-		var objects []client.Object
-		t, reconciler, cr, request := initStorageClusterResourceCreateUpdateTest(t, objects, nil)
-		if c.createRuntimeObjects {
-			objects = createUpdateRuntimeObjects(t) //nolint:staticcheck //no need to use objects as they update in runtime
+	for _, eachPlatform := range allPlatforms {
+		cp := &Platform{platform: eachPlatform}
+		for _, c := range cases {
+			var objects []client.Object
+			t, reconciler, cr, request := initStorageClusterResourceCreateUpdateTestWithPlatform(
+				t, cp, objects, nil)
+			if c.createRuntimeObjects {
+				objects = createUpdateRuntimeObjects(t, reconciler) //nolint:staticcheck //no need to use objects as they update in runtime
+			}
+			assertCephBlockPools(t, reconciler, cr, request, false, false)
+			assertCephNFSBlockPool(t, reconciler, cr, request)
 		}
-		assertCephBlockPools(t, reconciler, cr, request, false, false)
-		assertCephNFSBlockPool(t, reconciler, cr, request)
 	}
 }
 
@@ -83,21 +86,24 @@ func TestInjectingPeerTokenToCephBlockPool(t *testing.T) {
 		},
 	}
 
-	for _, c := range cases {
-		cr := getInitData(c.spec)
-		request := reconcile.Request{
-			NamespacedName: types.NamespacedName{
-				Name:      "ocsinit",
-				Namespace: "",
-			},
-		}
-		reconciler := createReconcilerFromCustomResources(t, cr)
-		_, err := reconciler.Reconcile(context.TODO(), request)
-		assert.NoError(t, err)
-		if c.label == "test-injecting-peer-token-to-cephblockpool" {
-			assertCephBlockPools(t, reconciler, cr, request, true, true)
-		} else {
-			assertCephBlockPools(t, reconciler, cr, request, true, false)
+	for _, eachPlatform := range allPlatforms {
+		cp := &Platform{platform: eachPlatform}
+		for _, c := range cases {
+			cr := getInitData(c.spec)
+			request := reconcile.Request{
+				NamespacedName: types.NamespacedName{
+					Name:      "ocsinit",
+					Namespace: "",
+				},
+			}
+			reconciler := createReconcilerFromCustomResources(t, cp, cr)
+			_, err := reconciler.Reconcile(context.TODO(), request)
+			assert.NoError(t, err)
+			if c.label == "test-injecting-peer-token-to-cephblockpool" {
+				assertCephBlockPools(t, reconciler, cr, request, true, true)
+			} else {
+				assertCephBlockPools(t, reconciler, cr, request, true, false)
+			}
 		}
 	}
 }
@@ -110,9 +116,9 @@ func getInitData(customSpec *api.StorageClusterSpec) *api.StorageCluster {
 	return cr
 }
 
-func createReconcilerFromCustomResources(t *testing.T, cr *api.StorageCluster) StorageClusterReconciler {
-	reconciler := createFakeInitializationStorageClusterReconciler(
-		t, &nbv1.NooBaa{})
+func createReconcilerFromCustomResources(t *testing.T, platform *Platform, cr *api.StorageCluster) StorageClusterReconciler {
+	reconciler := createFakeInitializationStorageClusterReconcilerWithPlatform(
+		t, platform, &nbv1.NooBaa{})
 
 	secret := corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{

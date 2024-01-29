@@ -19,7 +19,6 @@ import (
 	monitoringclient "github.com/prometheus-operator/prometheus-operator/pkg/client/versioned"
 	ocsv1 "github.com/red-hat-storage/ocs-operator/api/v4/v1"
 	"github.com/red-hat-storage/ocs-operator/v4/controllers/defaults"
-	"github.com/red-hat-storage/ocs-operator/v4/controllers/platform"
 	statusutil "github.com/red-hat-storage/ocs-operator/v4/controllers/util"
 	rookCephv1 "github.com/rook/rook/pkg/apis/ceph.rook.io/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -209,12 +208,10 @@ func (obj *ocsCephCluster) ensureCreated(r *StorageClusterReconciler, sc *ocsv1.
 		return reconcile.Result{}, err
 	}
 
-	platform, err := platform.GetPlatformType()
+	platform, err := r.platform.GetPlatform(r.Client)
 	if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	if platform == v1.IBMCloudPlatformType {
+		r.Log.Error(err, "Failed to get Platform.", "Platform", platform)
+	} else if platform == v1.IBMCloudPlatformType {
 		r.Log.Info("Increasing Mon failover timeout to 15m.", "Platform", platform)
 		cephCluster.Spec.HealthCheck.DaemonHealth.Monitor.Timeout = "15m"
 	}
@@ -898,24 +895,24 @@ func newStorageClassDeviceSets(sc *ocsv1.StorageCluster, serverVersion *version.
 		for _, failureDomainValue := range sc.Status.FailureDomainValues {
 			ds := rookCephv1.StorageClassDeviceSet{}
 			ds.Name = failureDomainValue
-			ds.Count = sc.Spec.ManagedResources.CephNonResilientPools.Count
-			ds.Resources = sc.Spec.ManagedResources.CephNonResilientPools.Resources
-			if ds.Resources.Requests == nil && ds.Resources.Limits == nil {
-				ds.Resources = defaults.GetProfileDaemonResources("osd", sc)
-			}
+			ds.Count = 1
+			ds.Resources = defaults.GetProfileDaemonResources("osd", sc)
 			// passing on existing defaults from existing devcicesets
 			ds.TuneSlowDeviceClass = sc.Spec.StorageDeviceSets[0].Config.TuneSlowDeviceClass
 			ds.TuneFastDeviceClass = sc.Spec.StorageDeviceSets[0].Config.TuneFastDeviceClass
 			annotations := map[string]string{
 				"crushDeviceClass": failureDomainValue,
 			}
-			if !reflect.DeepEqual(sc.Spec.ManagedResources.CephNonResilientPools.VolumeClaimTemplate, corev1.PersistentVolumeClaim{}) {
-				ds.VolumeClaimTemplates = []corev1.PersistentVolumeClaim{sc.Spec.ManagedResources.CephNonResilientPools.VolumeClaimTemplate}
-			} else {
-				// If not defined use the spec for volumeclaimtemplate from existing devicesets
-				ds.VolumeClaimTemplates = []corev1.PersistentVolumeClaim{sc.Spec.StorageDeviceSets[0].DataPVCTemplate}
+			// using the spec for volumeclaimtemplate from existing devicesets including the storageclass
+			volumeClaimTemplateSpec := storageClassDeviceSets[0].VolumeClaimTemplates[0].Spec
+			ds.VolumeClaimTemplates = []corev1.PersistentVolumeClaim{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Annotations: annotations,
+					},
+					Spec: volumeClaimTemplateSpec,
+				},
 			}
-			ds.VolumeClaimTemplates[0].Annotations = annotations
 			ds.Portable = sc.Status.FailureDomain != "host"
 			placement := rookCephv1.Placement{}
 			// Portable OSDs must have an node affinity to their zone
@@ -1020,7 +1017,7 @@ func (r *StorageClusterReconciler) checkTuneStorageDevices(ds ocsv1.StorageDevic
 		return dt.speed, nil
 	}
 
-	tuneFastDevices, err := platform.DevicesDefaultToFastForThisPlatform()
+	tuneFastDevices, err := r.DevicesDefaultToFastForThisPlatform()
 	if err != nil {
 		return diskSpeedUnknown, err
 	}

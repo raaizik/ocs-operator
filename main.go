@@ -39,7 +39,6 @@ import (
 	ocsv1alpha1 "github.com/red-hat-storage/ocs-operator/api/v4/v1alpha1"
 	"github.com/red-hat-storage/ocs-operator/v4/controllers/namespace"
 	"github.com/red-hat-storage/ocs-operator/v4/controllers/ocsinitialization"
-	"github.com/red-hat-storage/ocs-operator/v4/controllers/platform"
 	"github.com/red-hat-storage/ocs-operator/v4/controllers/storageclassrequest"
 	"github.com/red-hat-storage/ocs-operator/v4/controllers/storagecluster"
 	controllers "github.com/red-hat-storage/ocs-operator/v4/controllers/storageconsumer"
@@ -131,18 +130,6 @@ func main() {
 	defaultNamespaces := map[string]cache.Config{
 		operatorNamespace:            {},
 		"openshift-storage-extended": {},
-	}
-
-	platform.Detect()
-	isOpenShift, err := platform.IsPlatformOpenShift()
-	if err != nil {
-		setupLog.Error(err, "unable to detect platform")
-		os.Exit(1)
-	}
-	if isOpenShift {
-		setupLog.Info("Cluster is running on OpenShift.")
-	} else {
-		setupLog.Info("Cluster is not running on OpenShift.")
 	}
 
 	cfg := ctrl.GetConfigOrDie()

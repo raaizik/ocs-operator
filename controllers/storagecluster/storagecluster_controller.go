@@ -94,6 +94,7 @@ type StorageClusterReconciler struct {
 	conditions                []conditionsv1.Condition
 	phase                     string
 	nodeCount                 int
+	platform                  *Platform
 	images                    ImageMap
 	recorder                  *util.EventReporter
 	OperatorCondition         conditions.Condition
@@ -113,6 +114,7 @@ func (r *StorageClusterReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		return err
 	}
 
+	r.platform = &Platform{}
 	r.recorder = util.NewEventReporter(mgr.GetEventRecorderFor("controller_storagecluster"))
 
 	// Compose a predicate that is an OR of the specified predicates

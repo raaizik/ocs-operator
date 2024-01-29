@@ -12,8 +12,11 @@ import (
 )
 
 func TestVolumeSnapshotterClasses(t *testing.T) {
-	t, reconciler, _, request := initStorageClusterResourceCreateUpdateTest(t, nil, nil)
-	assertVolumeSnapshotterClasses(t, reconciler, request)
+	for _, eachPlatform := range allPlatforms {
+		cp := &Platform{platform: eachPlatform}
+		t, reconciler, _, request := initStorageClusterResourceCreateUpdateTestWithPlatform(t, cp, nil, nil)
+		assertVolumeSnapshotterClasses(t, reconciler, request)
+	}
 }
 
 func assertVolumeSnapshotterClasses(t *testing.T, reconciler StorageClusterReconciler,

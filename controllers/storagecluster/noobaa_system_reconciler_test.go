@@ -456,6 +456,7 @@ func getReconciler(t *testing.T, objs ...runtime.Object) StorageClusterReconcile
 	return StorageClusterReconciler{
 		Scheme:            scheme,
 		Client:            client,
+		platform:          &Platform{},
 		OperatorNamespace: "openshift-storage",
 	}
 }

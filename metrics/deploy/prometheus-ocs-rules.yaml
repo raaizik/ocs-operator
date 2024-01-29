@@ -284,7 +284,6 @@ spec:
       annotations:
         description: MDS cache usage for the daemon {{ $labels.ceph_daemon }} has exceeded above 95% of the requested value. Increase the memory request for {{ $labels.ceph_daemon }} pod.
         message: High MDS cache usage for the daemon {{ $labels.ceph_daemon }}.
-        runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/openshift-container-storage-operator/CephMdsCacheUsageHigh.md
         severity_level: error
       expr: |
         (ceph_mds_mem_rss * 1000) / on(ceph_daemon) group_left(job)(label_replace(kube_pod_container_resource_requests{container="mds", resource="memory"}, "ceph_daemon", "mds.$1", "pod", "rook-ceph-mds-(.*)-(.*)") * .5) > .95
@@ -293,12 +292,11 @@ spec:
         severity: critical
     - alert: OSDCPULoadHigh
       annotations:
-        description: CPU usage for osd on pod {{ $labels.pod }} has exceeded 80%. Consider creating more OSDs to increase performance
+        description: High CPU usage in the OSD container on pod {{ $labels.pod }}. Please create more OSDs to increase performance
         message: High CPU usage detected in OSD container on pod {{ $labels.pod}}.
         severity_level: warning
-      expr: |
-        pod:container_cpu_usage:sum{pod=~"rook-ceph-osd-.*"} / on(pod) kube_pod_resource_limit{resource='cpu',pod=~"rook-ceph-osd-.*"} > 0.80
-      for: 30m
+      expr: "pod:container_cpu_usage:sum{pod=~\"rook-ceph-osd-.*\"} > 0.35 \n"
+      for: 15m
       labels:
         severity: warning
     - alert: MDSCPUUsageHigh
@@ -308,7 +306,6 @@ spec:
           Please consider increasing the number of active metadata servers,
           it can be done by increasing the number of activeMetadataServers parameter in the StorageCluster CR.
         message: Ceph metadata server pod ({{ $labels.pod }}) has high cpu usage
-        runbook_url: https://github.com/openshift/runbooks/blob/master/alerts/openshift-container-storage-operator/CephMdsCpuUsageHigh.md
         severity_level: warning
       expr: |
         pod:container_cpu_usage:sum{pod=~"rook-ceph-mds.*"}/ on(pod) kube_pod_resource_limit{resource='cpu',pod=~"rook-ceph-mds.*"} > 0.67
