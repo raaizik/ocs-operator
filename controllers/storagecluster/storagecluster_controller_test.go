@@ -194,20 +194,22 @@ var mockDeviceSets = []api.StorageDeviceSet{
 }
 
 func getMockStorageProfiles() *api.StorageProfileList {
-	const pgAutoscaleMode = "pg_autoscale_mode"
-	const pgNum = "pg_num"
-	const pgpNum = "pgp_num"
-	const namespace = ""
-	const kind = "StorageProfile"
-	const apiVersion = "ocs.openshift.io/v1"
+	const (
+		pgAutoscaleMode         = "pg_autoscale_mode"
+		pgNum                   = "pg_num"
+		pgpNum                  = "pgp_num"
+		storageProfileNamespace = ""
+		storageProfileKind      = "StorageProfile"
+		apiVersion              = "ocs.openshift.io/v1"
+	)
 	spfast := &api.StorageProfile{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       kind,
+			Kind:       storageProfileKind,
 			APIVersion: apiVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "fast-performance",
-			Namespace: namespace,
+			Namespace: storageProfileNamespace,
 		},
 		Spec: api.StorageProfileSpec{
 			DeviceClass: "fast",
@@ -229,12 +231,12 @@ func getMockStorageProfiles() *api.StorageProfileList {
 	}
 	spmed := &api.StorageProfile{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       kind,
+			Kind:       storageProfileKind,
 			APIVersion: apiVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "med-performance",
-			Namespace: namespace,
+			Namespace: storageProfileNamespace,
 		},
 		Spec: api.StorageProfileSpec{
 			DeviceClass: "med",
@@ -256,12 +258,12 @@ func getMockStorageProfiles() *api.StorageProfileList {
 	}
 	spslow := &api.StorageProfile{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       kind,
+			Kind:       storageProfileKind,
 			APIVersion: apiVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "slow-performance",
-			Namespace: namespace,
+			Namespace: storageProfileNamespace,
 		},
 		Spec: api.StorageProfileSpec{
 			DeviceClass: "slow",
@@ -283,12 +285,12 @@ func getMockStorageProfiles() *api.StorageProfileList {
 	}
 	spblankdeviceclass := &api.StorageProfile{
 		TypeMeta: metav1.TypeMeta{
-			Kind:       kind,
+			Kind:       storageProfileKind,
 			APIVersion: apiVersion,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "blank-performance",
-			Namespace: namespace,
+			Namespace: storageProfileNamespace,
 		},
 		Spec: api.StorageProfileSpec{
 			DeviceClass: "",

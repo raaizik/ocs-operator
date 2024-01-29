@@ -110,6 +110,58 @@ func assertCephFileSystemProviderMode(t *testing.T, reconciler StorageClusterRec
 	}
 }
 
+func assertCephFileSystemProviderMode(t *testing.T, reconciler StorageClusterReconciler, cr *api.StorageCluster, requestOCSInit reconcile.Request, requestsStorageProfiles []reconcile.Request) {
+	actualFs := &cephv1.CephFilesystem{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "ocsinit-cephfilesystem",
+		},
+		Spec: cephv1.FilesystemSpec{
+			DataPools: []cephv1.NamedPoolSpec{
+				{Name: "fast", PoolSpec: cephv1.PoolSpec{DeviceClass: "fast"}},
+				{Name: "med", PoolSpec: cephv1.PoolSpec{DeviceClass: "med"}},
+				{Name: "slow", PoolSpec: cephv1.PoolSpec{DeviceClass: "slow"}},
+			},
+		},
+	}
+	requestOCSInit.Name = "ocsinit-cephfilesystem"
+	err := reconciler.Client.Get(context.TODO(), requestOCSInit.NamespacedName, actualFs)
+	assert.NoError(t, err)
+
+	storageProfiles := &api.StorageProfileList{}
+	err = reconciler.Client.List(context.TODO(), storageProfiles)
+	assert.NoError(t, err)
+	assert.Equal(t, len(storageProfiles.Items), len(requestsStorageProfiles))
+	assert.Equal(t, len(storageProfiles.Items)-1, len(actualFs.Spec.DataPools))
+
+	expectedCephFS, err := reconciler.newCephFilesystemInstances(cr)
+	assert.NoError(t, err)
+
+	assert.Equal(t, len(expectedCephFS[0].OwnerReferences), 1)
+
+	assert.Equal(t, expectedCephFS[0].ObjectMeta.Name, actualFs.ObjectMeta.Name)
+	assert.Equal(t, expectedCephFS[0].Spec, actualFs.Spec)
+	assert.Equal(t, expectedCephFS[0].Spec.DataPools[0].Name, actualFs.Spec.DataPools[0].Name)
+	assert.Equal(t, expectedCephFS[0].Spec.DataPools[1].Name, actualFs.Spec.DataPools[1].Name)
+	assert.Equal(t, expectedCephFS[0].Spec.DataPools[2].Name, actualFs.Spec.DataPools[2].Name)
+	assert.Equal(t, expectedCephFS[0].Spec.DataPools[0].PoolSpec.DeviceClass, actualFs.Spec.DataPools[0].PoolSpec.DeviceClass)
+	assert.Equal(t, expectedCephFS[0].Spec.DataPools[1].PoolSpec.DeviceClass, actualFs.Spec.DataPools[1].PoolSpec.DeviceClass)
+	assert.Equal(t, expectedCephFS[0].Spec.DataPools[2].PoolSpec.DeviceClass, actualFs.Spec.DataPools[2].PoolSpec.DeviceClass)
+
+	for i := range requestsStorageProfiles {
+		actualStorageProfile := &api.StorageProfile{}
+		requestStorageProfile := requestsStorageProfiles[i]
+		err = reconciler.Client.Get(context.TODO(), requestStorageProfile.NamespacedName, actualStorageProfile)
+		assert.NoError(t, err)
+		assert.Equal(t, requestStorageProfile.Name, actualStorageProfile.Name)
+
+		phaseStorageProfile := api.StorageProfilePhase("")
+		if strings.Contains(requestStorageProfile.Name, "blank") {
+			phaseStorageProfile = api.StorageProfilePhaseRejected
+		}
+		assert.Equal(t, phaseStorageProfile, actualStorageProfile.Status.Phase)
+	}
+}
+
 func assertCephFileSystem(t *testing.T, reconciler StorageClusterReconciler, cr *api.StorageCluster, request reconcile.Request) {
 	actualFs := &cephv1.CephFilesystem{
 		ObjectMeta: metav1.ObjectMeta{
